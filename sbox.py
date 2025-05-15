@@ -1,6 +1,6 @@
 import numpy as np
 
-def sbox(x):
+def sbox(x: np.uint64) -> np.uint64:
     """
     Evals for this s-box are:
     alpha: 4605518919111820264, beta: 2209636954507691192, P: 0.0002
