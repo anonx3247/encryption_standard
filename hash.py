@@ -4,6 +4,13 @@ def chunk_binary(string, length):
     return [string[i:length+i].zfill(length) for i in range(0, len(string), length)]
 
 def hash(m : int) -> int :
+    """
+    Calcule le hash d'un message de taille quelconque, selon la construction de Merkle–Damgård.
+    Pour la fonction, nous utilisons une construction du type Davies–Meyer, avec la 
+    fonction f(M, S) = sbox(M ^ S) ^ S
+    Le S initial est un entier de 64 bits généré aléatoirement.
+    La taille des morceaux et le nombre de rounds sont paramétrables.
+    """
     part_size = 64
     rounds = 5
 
@@ -20,5 +27,5 @@ def hash(m : int) -> int :
 
     return state
 
-print(hash(100000000))
-print(hash(100000001))
+for i in range(100, 110) :
+    print(f"Valeur de la sbox pour {i} : {sbox(i)}")
