@@ -1,14 +1,24 @@
 from sbox import sbox
 
-def chunk_binary(string, length, offset):
-    return ["0" * (length - len(string[offset+i:offset+i+length])) + string[offset+i:offset+length+i] for i in range(0, len(string), length)]
+def chunk_binary(string, length):
+    return [string[i:length+i].zfill(length) for i in range(0, len(string), length)]
 
 def hash(m : int) -> int :
-    part_size = 4
+    part_size = 64
+    rounds = 5
 
     binary_m = bin(m)[2:]
-    messages = chunk_binary(binary_m, part_size, 2)
+    messages = chunk_binary(binary_m, part_size)
 
-    return messages
+    state = 0x123456789abcdef
+    for message in messages :
+        int_message = int(message, 2)
+        for _ in range(rounds) :
+            int_message = sbox(int_message) ^ int_message
+        state = int_message
+        # final_message += bin(int_message)[2:]
 
-print(hash(0x5A656))
+    return state
+
+for i in range(1000, 2000) :
+    print(hash(i))
