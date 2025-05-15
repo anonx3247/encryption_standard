@@ -10,15 +10,15 @@ def hash(m : int) -> int :
     binary_m = bin(m)[2:]
     messages = chunk_binary(binary_m, part_size)
 
-    state = 0x123456789abcdef
+    state = 0b0111000110010001001111000000111011100001010010100101100001100010
     for message in messages :
         int_message = int(message, 2)
         for _ in range(rounds) :
-            int_message = sbox(int_message) ^ int_message
-        state = int_message
+            # print(state)
+            state = sbox(int_message ^ state) ^ state
         # final_message += bin(int_message)[2:]
 
     return state
 
-for i in range(1000, 2000) :
-    print(hash(i))
+print(hash(100000000))
+print(hash(100000001))
