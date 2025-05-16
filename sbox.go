@@ -14,7 +14,7 @@ const (
 	N            = 10000
 	K            = 10000
 	SEARCH_SPACE = 1 << 14
-	TEST_COUNT   = 500
+	TEST_COUNT   = 10
 )
 
 var UNCERTAINTY = 1.0 / math.Sqrt(float64(SEARCH_SPACE))
@@ -34,8 +34,10 @@ type Test struct {
 
 func Sbox(x, a, b uint64) uint64 {
 	// c must be odd
-	x = a ^ x
-	x = ^x + b
+	x = bits.RotateLeft64(x, 32)
+	x ^= a
+	x = x + x + x
+	x ^= b
 	return x
 }
 
@@ -100,6 +102,12 @@ func main() {
 		printLinearPairs(test.linear_pairs, 3)
 	}
 
+	best := func(x uint64) uint64 {
+		return Sbox(x, tests[0].a, tests[0].b)
+	}
+	for i := uint64(0); i < 32; i++ {
+		fmt.Printf("%d\n", best(i))
+	}
 }
 
 func testSbox(sbox func(uint64) uint64, print_results bool) (differential_pairs []Pair, linear_pairs []Pair) {
