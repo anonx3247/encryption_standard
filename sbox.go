@@ -5,7 +5,10 @@ import (
 	"math"
 	"math/bits"
 	"math/rand"
+	"runtime"
 	"sort"
+	"sync"
+	"time"
 )
 
 const (
@@ -13,61 +16,229 @@ const (
 	INPUT_SIZE   = 1 << (SIZE - 1)
 	N            = 10000
 	K            = 10000
-	SEARCH_SPACE = 1 << 14
-	TEST_COUNT   = 10
+	SEARCH_SPACE = 1 << 12
+	TEST_COUNT   = 100
 )
 
 var UNCERTAINTY = 1.0 / math.Sqrt(float64(SEARCH_SPACE))
 
-type Pair struct {
-	input  uint64
-	output uint64
+type Number interface {
+	uint32 | uint64 | uint16
+}
+type Pair[T Number] struct {
+	input  T
+	output T
 	prob   float64
 }
 
-type Test struct {
-	a                  uint64
-	b                  uint64
-	differential_pairs []Pair
-	linear_pairs       []Pair
+type Test[T Number] struct {
+	a                  T
+	b                  T
+	c                  T
+	d                  T
+	differential_pairs []Pair[T]
+	linear_pairs       []Pair[T]
 }
 
-func Sbox(x, a, b uint64) uint64 {
-	// c must be odd
-	x = bits.RotateLeft64(x, 32)
-	x ^= a
-	x = x + x + x
-	x ^= b
+var (
+	a   uint64 = 11109033717525269061
+	b   uint64 = 10403331604385742251
+	a32 uint32 = 1110903371
+	b32 uint32 = 1040333161
+	a16 uint16 = 11109
+	b16 uint16 = 10403
+)
+
+var operations = []struct {
+	op   func(uint64) uint64
+	cost int
+}{
+	{func(x uint64) uint64 { return x + a }, 3},
+	{func(x uint64) uint64 { return x + x + x }, 6},
+	{func(x uint64) uint64 { return x ^ b }, 2},
+	{func(x uint64) uint64 { return x + b }, 3},
+	{func(x uint64) uint64 { return x + x + x + x + x }, 9},
+	{func(x uint64) uint64 { return x ^ a }, 2},
+	{func(x uint64) uint64 { return bitRotate(x, 19) }, 10},
+	{func(x uint64) uint64 { return bitRotate(x, 13) }, 10},
+	{func(x uint64) uint64 { return x * x }, 50},
+}
+
+func sBox(x uint16) uint16 {
+	x = bits.RotateLeft16(x, 13)
+	x = ^(x ^ b16)
+	x *= a16
+	x = ^(x ^ a16)
+	x *= b16
+	x = bits.RotateLeft16(x, 7)
+	return x
+}
+
+func bitRotate(x uint64, n int) uint64 {
+	n64 := uint64(n)
+	nInv := uint64(64 - n)
+	return ((x << n64) | (x >> nInv))
+}
+
+func bitRotate32(x uint32, n int) uint32 {
+	n32 := uint32(n)
+	nInv := uint32(32 - n)
+	return ((x << n32) | (x >> nInv))
+}
+
+func buildSbox() func(uint64) uint64 {
+	totalCost := 0
+	var ops []func(uint64) uint64
+	for totalCost < 32 {
+		idx := rand.Intn(len(operations))
+		op := operations[idx].op
+		cost := operations[idx].cost
+		totalCost += cost
+		ops = append(ops, op)
+	}
+	if totalCost > 100 {
+		ops = ops[:len(ops)-1]
+	}
+
+	return func(x uint64) uint64 {
+		for _, op := range ops {
+			x = op(x)
+		}
+		return x
+	}
+}
+
+func sequentialEvaluator(sbox func(uint64) uint64) float64 {
+	inputs := make([]uint64, 1000)
+	for i := range inputs {
+		inputs[i] = uint64(i)
+	}
+	outputs := make([]uint64, 1000)
+	for i, x := range inputs {
+		outputs[i] = sbox(x)
+	}
+	diff := uint64(0)
+	for i := 0; i < len(inputs)-1; i++ {
+		diff += outputs[i] ^ outputs[i+1]
+	}
+	return float64(diff) / float64(len(inputs))
+}
+
+func findGoodSbox() func(uint64) uint64 {
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i < 10000; i++ {
+		sbox := buildSbox()
+		score := sequentialEvaluator(sbox)
+		if score < 20 {
+			return sbox
+		}
+	}
+	panic("Failed to find a good sbox")
+}
+
+func testSboxes(n int) {
+	scoresChan := make(chan float64, n)
+	numCPU := runtime.NumCPU()
+	chunkSize := n / numCPU
+	if chunkSize == 0 {
+		chunkSize = 1
+	}
+	var wg sync.WaitGroup
+
+	for i := 0; i < numCPU && i*chunkSize < n; i++ {
+		wg.Add(1)
+		workerID := i
+		go func() {
+			defer wg.Done()
+			for j := 0; j < chunkSize && workerID*chunkSize+j < n; j++ {
+				sbox := buildSbox()
+				fmt.Printf("Testing Sbox %d\n", workerID*chunkSize+j)
+				results := differentialCryptanalysis(sbox)
+				if len(results) > 0 {
+					scoresChan <- results[0].prob
+				} else {
+					// If no results, send a default value
+					scoresChan <- 0.0
+				}
+			}
+		}()
+	}
+
+	// Wait for all goroutines to complete in a separate goroutine
+	go func() {
+		wg.Wait()
+		close(scoresChan)
+	}()
+
+	scores := make([]float64, 0, n)
+	for score := range scoresChan {
+		scores = append(scores, score)
+	}
+	sort.Float64s(scores)
+
+	// Only print scores if we have any
+	numToPrint := 10
+	if len(scores) < numToPrint {
+		numToPrint = len(scores)
+	}
+
+	for i := 0; i < numToPrint; i++ {
+		fmt.Printf("Sbox %d: %f\n", i, scores[i])
+	}
+}
+
+func Sbox(x, a, b, c, d uint16) uint16 {
+	// b and d must be odd
+	if b%2 == 0 {
+		b++
+	}
+	if d%2 == 0 {
+		d++
+	}
+	x = bits.RotateLeft16(x, 13)
+	x = ^(x ^ a)
+	x *= b
+	x = ^(x ^ c)
+	x *= d
+	x = bits.RotateLeft16(x, 7)
 	return x
 }
 
 func main() {
-	tests := make([]Test, TEST_COUNT)
+	//_ = findGoodSbox()
+	//fmt.Println("Found a good S-box!")
+	//testSboxes(TEST_COUNT)
+	tests := make([]Test[uint16], TEST_COUNT)
 
 	// Create a channel to collect results
 	resultChan := make(chan struct {
 		index int
-		test  Test
+		test  Test[uint16]
 	}, TEST_COUNT)
 
 	// Launch goroutines for each test
 	for i := 0; i < TEST_COUNT; i++ {
 		go func(index int) {
-			a := rand.Uint64()
-			b := rand.Uint64()
+			a := uint16(rand.Uint64())
+			b := uint16(rand.Uint64())
+			c := uint16(rand.Uint64())
+			d := uint16(rand.Uint64())
 			if b%2 == 0 {
 				b++
 			}
-			f := func(x uint64) uint64 {
-				return Sbox(x, a, b)
+			if d%2 == 0 {
+				d++
 			}
-			fmt.Printf("Testing Sbox %d with a = %d, b = %d\n", index, a, b)
+			f := func(x uint16) uint16 {
+				return Sbox(x, a, b, c, d)
+			}
+			fmt.Printf("Testing Sbox %d with a = %d, b = %d, c = %d, d = %d\n", index, a, b, c, d)
 			differential_pairs, linear_pairs := testSbox(f, false)
 			fmt.Printf("Done testing Sbox %d\n", index)
 			resultChan <- struct {
 				index int
-				test  Test
-			}{index, Test{a, b, differential_pairs, linear_pairs}}
+				test  Test[uint16]
+			}{index, Test[uint16]{a, b, c, d, differential_pairs, linear_pairs}}
 		}(i)
 	}
 
@@ -102,15 +273,15 @@ func main() {
 		printLinearPairs(test.linear_pairs, 3)
 	}
 
-	best := func(x uint64) uint64 {
-		return Sbox(x, tests[0].a, tests[0].b)
+	best := func(x uint16) uint16 {
+		return Sbox(x, tests[0].a, tests[0].b, tests[0].c, tests[0].d)
 	}
-	for i := uint64(0); i < 32; i++ {
+	for i := uint16(0); i < 32; i++ {
 		fmt.Printf("%d\n", best(i))
 	}
 }
 
-func testSbox(sbox func(uint64) uint64, print_results bool) (differential_pairs []Pair, linear_pairs []Pair) {
+func testSbox[T Number](sbox func(T) T, print_results bool) (differential_pairs []Pair[T], linear_pairs []Pair[T]) {
 	if print_results {
 		fmt.Println("Testing Sbox")
 	}
@@ -124,41 +295,41 @@ func testSbox(sbox func(uint64) uint64, print_results bool) (differential_pairs 
 	return
 }
 
-func printDifferentialPairs(pairs []Pair, top_n int) {
+func printDifferentialPairs[T Number](pairs []Pair[T], top_n int) {
 	fmt.Println("Top Differential Pairs:")
 	for _, pair := range pairs[:top_n] {
 		fmt.Printf("Input: %d, Output: %d, Prob: %.4f\n", pair.input, pair.output, pair.prob)
 	}
 }
 
-func printLinearPairs(pairs []Pair, top_n int) {
+func printLinearPairs[T Number](pairs []Pair[T], top_n int) {
 	fmt.Println("Top Linear Pairs:")
 	for _, pair := range pairs[:top_n] {
 		fmt.Printf("Input: %d, Output: %d, Bias: %.4f ± %.4f\n", pair.input, pair.output, pair.prob-0.5, UNCERTAINTY)
 	}
 }
 
-func differentialCryptanalysis(sbox func(uint64) uint64) []Pair {
-	best_differentials := []Pair{}
+func differentialCryptanalysis[T Number](sbox func(T) T) []Pair[T] {
+	best_differentials := []Pair[T]{}
 
 	for i := 0; i < N; i++ {
-		alpha := rand.Uint64()
-		beta_counter := make(map[uint64]int)
+		alpha := T(rand.Uint64())
+		beta_counter := make(map[T]int)
 		for j := 0; j < K; j++ {
-			m := rand.Uint64()
+			m := T(rand.Uint64())
 			m_prime := m ^ alpha
 			beta := sbox(m) ^ sbox(m_prime)
 			beta_counter[beta] += 1
 		}
 		most_common_beta := 0
-		best_differential := uint64(0)
+		best_differential := T(0)
 		for beta, count := range beta_counter {
 			if count > most_common_beta {
 				most_common_beta = count
 				best_differential = beta
 			}
 		}
-		best_differentials = append(best_differentials, Pair{alpha, best_differential, float64(most_common_beta) / float64(N)})
+		best_differentials = append(best_differentials, Pair[T]{alpha, best_differential, float64(most_common_beta) / float64(N)})
 	}
 
 	sort.Slice(best_differentials, func(i, j int) bool {
@@ -168,10 +339,10 @@ func differentialCryptanalysis(sbox func(uint64) uint64) []Pair {
 	return best_differentials
 }
 
-func testDifferential(sbox func(uint64) uint64, alpha, beta uint64) float64 {
+func testDifferential[T Number](sbox func(T) T, alpha, beta T) float64 {
 	counter := 0
 	for i := 0; i < N; i++ {
-		m := rand.Uint64()
+		m := T(rand.Uint64())
 		m_prime := m ^ alpha
 		beta_prime := sbox(m_prime) ^ sbox(m)
 		if beta_prime == beta {
@@ -181,18 +352,27 @@ func testDifferential(sbox func(uint64) uint64, alpha, beta uint64) float64 {
 	return float64(counter) / float64(N)
 }
 
-func linearCryptanalysis(sbox func(uint64) uint64) []Pair {
-
-	parity := func(v1, v2 uint64) uint64 {
-		return uint64(bits.OnesCount64(v1&v2) & 1)
+func linearCryptanalysis[T Number](sbox func(T) T) []Pair[T] {
+	var parity func(T, T) T
+	switch any(T(0)).(type) {
+	case uint32:
+		parity = func(v1, v2 T) T {
+			return T(bits.OnesCount32(uint32(v1)&uint32(v2)) & 1)
+		}
+	case uint64:
+		parity = func(v1, v2 T) T {
+			return T(bits.OnesCount64(uint64(v1)&uint64(v2)) & 1)
+		}
+	case uint16:
+		parity = func(v1, v2 T) T {
+			return T(bits.OnesCount16(uint16(v1)&uint16(v2)) & 1)
+		}
 	}
 
-	bias_approx := func(a, b uint64) float64 {
-		// we will do a monte carlo approximation since the input space is too large
-
+	bias_approx := func(a, b T) float64 {
 		lat_approx := 0
 		for i := 0; i < SEARCH_SPACE; i++ {
-			x := rand.Uint64()
+			x := T(rand.Uint64())
 			ax_parity := parity(a, x)
 			bs_parity := parity(b, sbox(x))
 
@@ -206,14 +386,13 @@ func linearCryptanalysis(sbox func(uint64) uint64) []Pair {
 		return epsilon
 	}
 
-	best_linear_pairs := make([]Pair, 0, N)
+	best_linear_pairs := make([]Pair[T], 0, N)
 
 	for i := 0; i < N; i++ {
-		a := rand.Uint64()
-		b := rand.Uint64()
+		a := T(rand.Uint64())
+		b := T(rand.Uint64())
 
 		epsilon := bias_approx(a, b)
-
 		prob_abs_bias := 0.5 + math.Abs(epsilon)
 
 		if epsilon < 0 {
@@ -221,7 +400,7 @@ func linearCryptanalysis(sbox func(uint64) uint64) []Pair {
 		}
 
 		if math.Abs(epsilon)-UNCERTAINTY > 1e-9 {
-			best_linear_pairs = append(best_linear_pairs, Pair{a, b, prob_abs_bias})
+			best_linear_pairs = append(best_linear_pairs, Pair[T]{a, b, prob_abs_bias})
 		}
 	}
 

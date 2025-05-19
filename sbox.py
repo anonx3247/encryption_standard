@@ -11,8 +11,17 @@ operations = [
     (lambda x: x + x + x + x + x, 9),
     (lambda x: x ^ a, 2),
     (lambda x: bit_rotate(x, 19), 10),
-    (lambda x: bit_rotate(x, 13s), 10),
+    (lambda x: bit_rotate(x, 13), 10),
 ]
+
+def sbox(x: np.uint16) -> np.uint16: # 32
+    x = bit_rotate(x, 13)
+    x = ~(x ^ a)
+    x *= b
+    x = ~(x ^ b)
+    x *= a
+    x = bit_rotate(x, 7)
+    return x
 
 def build_sbox():
     total_cost = 0
@@ -29,7 +38,6 @@ def build_sbox():
             x = op(x)
         return x
     return sbox
-
 
 def sequential_evaluator(sbox):
     "sees how much outputs differ from inputs"
@@ -50,36 +58,14 @@ def find_good_sbox():
     raise Exception("Failed to find a good sbox")
 
 
-def sbox(x: np.uint64) -> np.uint64:
-    """
-    Evals for this s-box are:
-    alpha: 4605518919111820264, beta: 2209636954507691192, P: 0.0002
-    alpha: 2640855108307626154, beta: 7342575683542231546, P: 0.0002
-    alpha: 13221700181408208335, beta: 6322185673877839173, P: 0.0002
-    Top Linear Pairs:
-    a: 7423956078665021271, b: 409410123895023919, B: 0.0079 ± 0.0078
-    a: 8533490844825014657, b: 7271756754228565278, B: 0.0079 ± 0.0078
-    a: 384992579778828649, b: 10049135689920458331, B: 0.0079 ± 0.0078
-    """
-
-    
-
-    def round(x, a, b): # 11
-        x += a # 3
-        x = x + x + x  # 6
-        return x ^ b # 2
-
-    
-    y = round(x, a, b) # 11
-    y = round(y, a, b) # 11
-    y = round(y, a, b) # 11
-    return y
-
-
-
 def bit_rotate(x: np.uint64, n: int) -> np.uint64: # 10
     n = np.uint64(n)
     n_inv = np.uint64(64 - n)
+    return ((x << n) | (x >> n_inv))
+
+def bit_rotate_16(x: np.uint16, n: int) -> np.uint16: # 10
+    n = np.uint16(n)
+    n_inv = np.uint16(16 - n)
     return ((x << n) | (x >> n_inv))
 
 def test_2n(f):
@@ -93,3 +79,13 @@ def test_n(f):
     for i in range(32):
         j = f(np.uint64(i))
         print(f"{i:#018x} -> {j:#018x}")
+
+def test_collisions(f, n):
+    prev = set()
+    for i in range(n):
+        j = f(np.uint16(i))
+        if j in prev:
+            print(f"Collision found at {i:#018x}")
+        prev.add(j)
+    return prev
+
