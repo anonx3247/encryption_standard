@@ -1,4 +1,3 @@
-import random as rd
 from hash16 import hash
 
 p = 2^128 + 51
@@ -17,7 +16,7 @@ q = G.order()
 print(G)
 
 def secrandom(length) :
-    return rd.randint(1, 2**length - 1)
+    return ZZ.random_element(1, p)
 
 def signature_keygen():
     secret_key = secrandom(q)
@@ -25,25 +24,29 @@ def signature_keygen():
     return secret_key, public_key
 
 def sign(secret_key, m) :
-    e = hash(m)
+    e = hash(m) % q
     k = secrandom(q)
-    r = (k * G)[1]
-    s = (e * r * secret_key) * k.inverse() 
+    r = ZZ((k * G)[1]) % q
+    s = ZZ(e * secret_key * r) * inverse_mod(k, q) % q
     sigma = (r, s)
+    return sigma
 
 def verify(public_key, signature, m) :
     r, s = signature
-    t = inverse_mod(s, q)
+    t = inverse_mod(s, q) % q
     e = hash(m)
-    r_prime = (e * r * t * public_key)[1]
-    success = r == r_prime
+    u = r * e * t % q
+    r_prime = u * public_key
+    print("r = ", r)
+    print("r_prime =", r_prime[1])
+    success = r == r_prime[1]
     return success
 
 
-m = 0b1001001010
+m = 0b10010010100010101010101001
 
 priv, pub = signature_keygen()
 
 signature = sign(priv, m)
-ver = verify(pub, m, signature)
+ver = verify(pub, signature, m)
 print(ver)
