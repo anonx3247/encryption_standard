@@ -1,4 +1,4 @@
-from perm import sbox
+from sbox import sbox
 import numpy as np
 
 def chunk_binary(string, length):
@@ -28,7 +28,7 @@ def hash(message : int) -> int :
     # print(len(bin(state)) - 2)
 
     for chunk in message_chunks :
-            state = p_128(chunk ^ state) ^ state
+        state = p_128(chunk ^ state) ^ state
 
     return state
 

@@ -4,6 +4,7 @@ from sage.all import *
 #can't access hash...
 def hash(x): #change to actual hash function
     return x
+
 def secrandom(n): # imagine this is the quality rng
     r  = randint(1, 2**n) # change the 0 for 2 ** (n - 1) if we don't count leading 0s as bits
     return r
@@ -21,7 +22,7 @@ a = 1
 b = 7
 Fp = GF(p)
 E = EllipticCurve(Fp, [0, 0, 0, a, b])
-N = E.order() 
+N = E.order()
 G = E.gens()[0] # as a curve of prime order, any generator works
 
 def signature_keygen():

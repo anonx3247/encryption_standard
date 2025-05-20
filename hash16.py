@@ -8,7 +8,7 @@ def p_128(value: int) -> int:
     # 128 bits divisés en 8 blocs de 16 bits
     blocs = [(value >> (112 - 16*i)) & 0xFFFF for i in range(8)]
     blocs = [sbox(np.uint16(b)) for b in blocs]
-    return sum([blocs[i] << (112 - 16*i) for i in range(8)])
+    return sum([int(blocs[i] << (112 - 16*i)) for i in range(8)])
 
 def hash(message: int) -> int:
     """
