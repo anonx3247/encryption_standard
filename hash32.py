@@ -27,7 +27,7 @@ def hash(message : int) -> int :
     state = 0b11110001111110010101001100011001111010101010101011111010110111001101010100011000111010111111010100000111010100111011010111100011
 
     for chunk in message_chunks :
-            state = p_128(chunk ^ state) ^ state
+        state = p_128(chunk ^ state) ^ state
 
     return state
 
