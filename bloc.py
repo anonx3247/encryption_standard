@@ -10,9 +10,6 @@ def block_encrypt(key: np.uint64, message: int, rounds: int = 16) -> int:
     message_blocks = split_blocks_64(message)
     outputs = message_blocks
 
-    print("outputs:")
-    print(len(outputs))
-
     for _ in range(rounds):
         for i in range(len(outputs)):
             outputs[i] = block_encryption_round(key, outputs[i])
@@ -25,15 +22,11 @@ def block_decrypt(key: np.uint64, cipher: int, rounds: int = 16, num_blocks: int
     cipher_blocks = split_blocks_64(cipher, num_blocks)
     outputs = cipher_blocks
 
-    print("cipher_blocks:")
-    print(len(cipher_blocks))
 
     for _ in range(rounds):
         for i in range(len(outputs)):
             outputs[i] = block_decryption_round(key, outputs[i])
     
-    print("outputs:")
-    print(len(outputs))
     # concatenate the outputs
     return join_blocks_64(outputs)
 

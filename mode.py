@@ -34,8 +34,7 @@ def decrypt_and_verify(keys: list[np.uint16], c: int, tag: int, aux=None):
     computed_tag = hash(m ^ k2)
     
     if computed_tag != tag:
-        print(f"Tag invalide: {computed_tag} != {tag}")
-        print(f"Faux message: {m:x}")
+        print(f"Tag invalide: {computed_tag:x} != {tag:x}")
         return False, None
     
     return True, m
