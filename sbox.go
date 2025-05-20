@@ -204,6 +204,7 @@ func Sbox(x, a, b, c, d uint16) uint16 {
 	return x
 }
 
+/*
 func main() {
 	//_ = findGoodSbox()
 	//fmt.Println("Found a good S-box!")
@@ -280,6 +281,7 @@ func main() {
 		fmt.Printf("%d\n", best(i))
 	}
 }
+*/
 
 func testSbox[T Number](sbox func(T) T, print_results bool) (differential_pairs []Pair[T], linear_pairs []Pair[T]) {
 	if print_results {
