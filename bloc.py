@@ -7,7 +7,7 @@ matrix_inv = matrix_inverse(matrix)
 
 def block_encrypt(key: np.uint64, message: int, rounds: int = 16) -> int:
     # separate into 64-bit blocks with padding
-    message_blocks = split_blocks(message, 64)
+    message_blocks = split_blocks_64(message)
     outputs = message_blocks
 
     for _ in range(rounds):
@@ -15,11 +15,11 @@ def block_encrypt(key: np.uint64, message: int, rounds: int = 16) -> int:
             outputs[i] = block_encryption_round(key, outputs[i])
     
     # concatenate the outputs
-    return join_blocks(outputs, 64)
+    return join_blocks_64(outputs)
 
 def block_decrypt(key: np.uint64, cipher: int, rounds: int = 16) -> int:
     # separate into 64-bit blocks with padding
-    cipher_blocks = split_blocks(cipher, 64)
+    cipher_blocks = split_blocks_64(cipher)
     outputs = cipher_blocks
 
     for _ in range(rounds):
@@ -27,7 +27,7 @@ def block_decrypt(key: np.uint64, cipher: int, rounds: int = 16) -> int:
             outputs[i] = block_decryption_round(key, outputs[i])
     
     # concatenate the outputs
-    return join_blocks(outputs, 64)
+    return join_blocks_64(outputs)
 
 
 def block_encryption_round(key: np.uint64, message: np.uint64) -> np.uint64:
@@ -60,10 +60,16 @@ def linear_layer_inv(vector: np.uint64) -> list[np.uint16]:
 def join_blocks(blocks: list[np.uint16], block_size: int) -> np.uint64:
     return np.uint64(int(''.join([bin(block)[2:].zfill(block_size) for block in blocks]), 2))
 
+def join_blocks_64(blocks: list[np.uint64]) -> int:
+    return int(''.join([bin(block)[2:].zfill(64) for block in blocks]), 2)
+
 def split_blocks(vector: np.uint64, block_size: int) -> list[np.uint16]:
     vector_str = bin(vector)[2:].zfill(64)
-    if block_size == 16:
-        blocks = [np.uint16(int(vector_str[i:i+block_size], 2)) for i in range(0, 64, block_size)]
-    elif block_size == 64:
-        blocks = [np.uint64(int(vector_str[i:i+block_size], 2)) for i in range(0, 64, block_size)]
-    return blocks
+    return [np.uint16(int(vector_str[i:i+block_size], 2)) for i in range(0, 64, block_size)]
+
+def split_blocks_64(vector: int) -> list[np.uint64]:
+    vector_str = str(bin(vector))[2:]
+    length = len(vector_str)
+    vector_str = vector_str.zfill(64 * (length // 64 + 1)) # pad with zeros to make it a multiple of 64
+    return [np.uint64(int(vector_str[i:i+64], 2)) for i in range(0, 64 * (length // 64 + 1), 64)]
+
