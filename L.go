@@ -18,11 +18,9 @@ func multiplyMatrixVector(matrix [64]uint64, vector uint64) uint64 {
 		This comes down to xoring the colums of the matrix that correspond to the 1s in the vector.
 	*/
 	var result uint64 = 0
-	for i := 0; i < 64; i++ {
-		for j := 0; j < 64; j++ {
-			if (vector>>j)&1 == 1 {
-				result ^= matrix[j]
-			}
+	for j := 0; j < 64; j++ {
+		if (vector>>j)&1 == 1 {
+			result ^= matrix[j]
 		}
 	}
 	return result
@@ -81,6 +79,7 @@ func randVector() uint64 {
 	return rand.Uint64()
 }
 
+/*
 func main() {
 	num_matrices := 100000
 	num_tests := 100000
@@ -88,3 +87,4 @@ func main() {
 	fmt.Printf("Matrix: %x\n", eval.Matrix[0])
 	fmt.Printf("Eval: %d\n", eval.Eval)
 }
+*/
