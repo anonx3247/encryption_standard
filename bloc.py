@@ -10,22 +10,30 @@ def block_encrypt(key: np.uint64, message: int, rounds: int = 16) -> int:
     message_blocks = split_blocks_64(message)
     outputs = message_blocks
 
+    print("outputs:")
+    print(len(outputs))
+
     for _ in range(rounds):
         for i in range(len(outputs)):
             outputs[i] = block_encryption_round(key, outputs[i])
     
     # concatenate the outputs
-    return join_blocks_64(outputs)
+    return join_blocks_64(outputs), len(outputs)
 
-def block_decrypt(key: np.uint64, cipher: int, rounds: int = 16) -> int:
+def block_decrypt(key: np.uint64, cipher: int, rounds: int = 16, num_blocks: int = None) -> int:
     # separate into 64-bit blocks with padding
-    cipher_blocks = split_blocks_64(cipher)
+    cipher_blocks = split_blocks_64(cipher, num_blocks)
     outputs = cipher_blocks
+
+    print("cipher_blocks:")
+    print(len(cipher_blocks))
 
     for _ in range(rounds):
         for i in range(len(outputs)):
             outputs[i] = block_decryption_round(key, outputs[i])
     
+    print("outputs:")
+    print(len(outputs))
     # concatenate the outputs
     return join_blocks_64(outputs)
 
@@ -67,9 +75,11 @@ def split_blocks(vector: np.uint64, block_size: int) -> list[np.uint16]:
     vector_str = bin(vector)[2:].zfill(64)
     return [np.uint16(int(vector_str[i:i+block_size], 2)) for i in range(0, 64, block_size)]
 
-def split_blocks_64(vector: int) -> list[np.uint64]:
+def split_blocks_64(vector: int, num_blocks: int = None) -> list[np.uint64]:
     vector_str = str(bin(vector))[2:]
     length = len(vector_str)
-    vector_str = vector_str.zfill(64 * (length // 64 + 1)) # pad with zeros to make it a multiple of 64
-    return [np.uint64(int(vector_str[i:i+64], 2)) for i in range(0, 64 * (length // 64 + 1), 64)]
+    if num_blocks is None:
+        num_blocks = length // 64 + 1
+    vector_str = vector_str.zfill(64 * num_blocks)
+    return [np.uint64(int(vector_str[i:i+64], 2)) for i in range(0, 64 * num_blocks, 64)]
 

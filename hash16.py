@@ -4,13 +4,13 @@ import numpy as np
 def chunk_binary(string, length):
     return [int(string[i:i+length].zfill(length), 2) for i in range(0, len(string), length)]
 
-def p_128(value: np.uint16) -> np.uint16:
+def p_128(value: int) -> int:
     # 128 bits divisés en 8 blocs de 16 bits
     blocs = [(value >> (112 - 16*i)) & 0xFFFF for i in range(8)]
     blocs = [sbox(np.uint16(b)) for b in blocs]
     return sum([int(blocs[i] << (112 - 16*i)) for i in range(8)])
 
-def hash(message: np.uint16) -> np.uint16:
+def hash(message: int) -> int:
     """
     Merkle–Damgård avec f(M, S) = p_128(M ^ S) ^ S
     """
