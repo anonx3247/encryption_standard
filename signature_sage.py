@@ -2,7 +2,7 @@
 from sage.all_cmdline import *   # import sage library
 
 _sage_const_2 = Integer(2); _sage_const_128 = Integer(128); _sage_const_51 = Integer(51); _sage_const_36 = Integer(36); _sage_const_0 = Integer(0); _sage_const_1 = Integer(1); _sage_const_0b10010010100010101010101001 = Integer(0b10010010100010101010101001)
-from hash16 import hash
+from hash import hash
 
 p = _sage_const_2 **_sage_const_128  + _sage_const_51 
 K = GF(p)

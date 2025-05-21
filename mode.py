@@ -1,5 +1,5 @@
 from encryption import block_encrypt, block_decrypt
-from hash16 import hash
+from hash import hash
 import numpy as np
 
 def encrypt_and_authenticate(keys: list[np.uint16], m: int, aux=None):

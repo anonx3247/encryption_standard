@@ -367,6 +367,23 @@ def akex_final(other_sign_public_key, internal_secret, msg2):
 
     return shared_keys
 
+def simulate_encryption():
+    print("Simulating encryption")
+    symmetric_key_1 = np.random.randint(0, 2**64, dtype=np.uint64)
+    symmetric_key_2 = np.random.randint(0, 2**64, dtype=np.uint64)
+    keys = [symmetric_key_1, symmetric_key_2]
+    message = int(''.join([str(np.random.randint(0, 2**64, dtype=np.uint64)) for _ in range(16)]))
+    print("Message:", f"{message:x}")
+
+    aux, cipher, tag = encrypt_and_authenticate(keys, message)
+    print("Cipher:", f"{cipher:x}")
+
+    verified, decrypted = decrypt_and_verify(keys, cipher, tag, aux)
+    print("Verified:", verified)
+    if verified:
+        print("Decrypted:", f"{decrypted:x}")
+
+
 
 def simulate_akex():
     print("Simulating AKEX")
@@ -394,3 +411,55 @@ def simulate_akex():
     shared_keys_b = akex_final(pubA, b, msg1)
 
     print(f'{shared_keys_a}\n{shared_keys_b}')
+
+def simulate_signature():
+    print("Simulating signature")
+    priv_key, pub_key = signature_keygen()
+    message = np.uint64(0x1234567890ABCDEF)
+    signature = sign(priv_key, message)
+    verified = verify(pub_key, signature, message)
+    print(f"Verified: {verified}")
+
+def simulate_complete_protocol():
+    print("Simulating complete protocol")
+
+    print("A generates a public-private key pair")
+    priv_key_A, pub_key_A = signature_keygen()
+
+    print("B does the same")
+    priv_key_B, pub_key_B = signature_keygen()
+
+    print("A signs a message")
+    message = np.uint64(0x1234567890ABCDEF)
+    signature = sign(priv_key_A, message)
+
+    print("A and B exchange their public keys")
+    internal_secret_A, msg1 = akex_init(priv_key_A, pub_key_A)
+    internal_secret_B, msg2 = akex_init(priv_key_B, pub_key_B)
+
+    print("A and B verify each other's identity")
+    shared_keys_a = akex_final(pub_key_B, internal_secret_A, msg2)
+    shared_keys_b = akex_final(pub_key_A, internal_secret_B, msg1)
+
+    shared_keys_a = [int(s) for s in shared_keys_a]
+    shared_keys_b = [int(s) for s in shared_keys_b]
+
+    print("A uses the shared key to encrypt a message and signature to send to B")
+    message = np.uint64(0x1234567890ABCDEF)
+    aux, cipher, tag = encrypt_and_authenticate(shared_keys_a, message)
+    
+    # Encrypt signature components separately
+    aux_r, encrypted_signature_r, tag_r = encrypt_and_authenticate(shared_keys_a, signature[0])
+    aux_s, encrypted_signature_s, tag_s = encrypt_and_authenticate(shared_keys_a, signature[1])
+
+    print("B decrypts and verifies the message")
+    verified, decrypted = decrypt_and_verify(shared_keys_b, cipher, tag, aux)
+
+    print("B decrypts and verifies the signature")
+    verified_signature_r, decrypted_signature_r = decrypt_and_verify(shared_keys_b, encrypted_signature_r, tag_r, aux_r)
+    verified_signature_s, decrypted_signature_s = decrypt_and_verify(shared_keys_b, encrypted_signature_s, tag_s, aux_s)
+    assert verified_signature_r and verified_signature_s, "Signature verification failed"
+    decrypted_signature = (decrypted_signature_r, decrypted_signature_s)
+    verified_signature = verify(pub_key_A, decrypted_signature, decrypted)
+
+    print(f"Verified: {verified and verified_signature}")
