@@ -31,17 +31,32 @@ def p_128(value: int) -> int:
 
 def hash(message: int) -> int:
     """
-    Merkle–Damgård avec f(M, S) = p_128(M ^ S) ^ S
+    Hybride entre éponge et Merkle–Damgård avec f(M, S) = p_128(M ^ S) ^ S
     """
     chunk_size = 128
     binary_message = bin(message)[2:]
     message_chunks = chunk_binary_md(binary_message, chunk_size)
-    print(message_chunks)
+
+    n = len(message_chunks)
+    c = 128 // n
+    c_left = 128 % n
+
+    result = 0
 
     state = 0b11110001111110010101001100011001111010101010101011111010110111001101010100011000111010111111010100000111010100111011010111100011
+    bit_pos = 128
 
-    
-    for chunk in message_chunks:
+    for i in range(n) :
+        chunk = message_chunks[i]
         state = p_128(chunk ^ state) ^ state
 
-    return state
+        size = c + c_left if i == n - 1 else c
+        bit_pos -= size
+
+        # On extrait les 'size' bits de state
+        part = (state >> (128 - size)) & ((1 << size) - 1)
+
+        # On ajoute ces bits à la position souhaitée
+        result = result | (part << bit_pos)
+
+    return result
