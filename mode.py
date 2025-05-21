@@ -1,4 +1,4 @@
-from bloc import block_encrypt, block_decrypt
+from encryption import block_encrypt, block_decrypt
 from hash16 import hash
 import numpy as np
 

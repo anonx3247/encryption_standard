@@ -7,8 +7,8 @@ from hash16 import hash
 p = _sage_const_2 **_sage_const_128  + _sage_const_51 
 K = GF(p)
 
-a = _sage_const_2 
-b = _sage_const_36 
+a = _sage_const_2
+b = _sage_const_36
 
 E = EllipticCurve(K, [a, b])
 

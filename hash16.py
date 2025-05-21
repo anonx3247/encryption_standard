@@ -1,6 +1,6 @@
 from sbox import sbox
 import numpy as np
-from bloc import split_blocks_128
+from encryption import split_blocks_128
 
 
 def chunk_binary_md(string: str, length: int) -> list[int]:
