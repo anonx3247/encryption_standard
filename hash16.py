@@ -1,6 +1,7 @@
 from sbox import sbox
 import numpy as np
-import random as rd
+from bloc import split_blocks_128
+
 
 def chunk_binary_md(string: str, length: int) -> list[int]:
     """
@@ -33,6 +34,8 @@ def hash(message: int) -> int:
     """
     Hybride entre éponge et Merkle–Damgård avec f(M, S) = p_128(M ^ S) ^ S
     """
+
+    """
     chunk_size = 128
     binary_message = bin(message)[2:]
     message_chunks = chunk_binary_md(binary_message, chunk_size)
@@ -43,9 +46,14 @@ def hash(message: int) -> int:
 
     result = 0
 
+    """
+
+    chunks = split_blocks_128(message)
+
     state = 0b11110001111110010101001100011001111010101010101011111010110111001101010100011000111010111111010100000111010100111011010111100011
     bit_pos = 128
 
+    """
     for i in range(n) :
         chunk = message_chunks[i]
         state = p_128(chunk ^ state) ^ state
@@ -58,5 +66,12 @@ def hash(message: int) -> int:
 
         # On ajoute ces bits à la position souhaitée
         result = result | (part << bit_pos)
+
+    """
+
+    for chunk in chunks:
+        state = p_128(chunk ^ state) ^ state
+
+    result = state
 
     return result
