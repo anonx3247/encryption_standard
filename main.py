@@ -1,4 +1,6 @@
 import numpy as np
+from sage.all_cmdline import *   # import sage library
+
 
 ################################################
 #################### 1. Sbox ####################
@@ -292,6 +294,43 @@ def decrypt_and_verify(keys: list[np.uint16], c: int, tag: int, aux=None):
 ################## 5.Signature ##################
 #################################################
 
+p = Integer(2**128 + 51)
+K = GF(p)
+
+a = Integer(2) 
+b = Integer(36) 
+
+E = EllipticCurve(K, [a, b])
+
+G = E.gens()[0]
+q = G.order()
+
+print(f"Generator of the curve : {G} of order {q}")
+
+def secrandom(length) :
+    return ZZ.random_element(1 , p)
+
+def signature_keygen():
+    secret_key = secrandom(q)
+    public_key = secret_key * G
+    return secret_key, public_key
+
+def sign(secret_key, m) :
+    e = hash(m) % q
+    k = secrandom(q)
+    r = ZZ((k * G)[1]) % q
+    s = ZZ(e * secret_key * r) * inverse_mod(k, q) % q
+    sigma = (r, s)
+    return sigma
+
+def verify(public_key, signature, m) :
+    r, s = signature
+    t = inverse_mod(s, q) % q
+    e = hash(m)
+    u = r * e * t % q
+    r_prime = u * public_key
+    success = r == r_prime[1]
+    return success
 
 #################################################
 ############## 6.Echange de clefs ###############

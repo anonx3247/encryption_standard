@@ -68,7 +68,6 @@ def hash(message: int) -> int:
         result = result | (part << bit_pos)
 
     """
-
     for chunk in chunks:
         state = p_128(chunk ^ state) ^ state
 
