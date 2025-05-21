@@ -15,8 +15,7 @@ N = E.order()
 def akex_init(my_sign_secret_key, my_sign_public_key = None):
     
     internal_secret = ZZ.random_element(1, N) 
-    I = internal_secret * G
-    #LOOK INTO MAYBE ADDING SOMETHING ELSE HERE
+    I = internal_secret * G 
 
     sig = sign(my_sign_secret_key, ZZ(I[0])) #sign x coord only
     msg1 = (I, sig)
@@ -24,18 +23,23 @@ def akex_init(my_sign_secret_key, my_sign_public_key = None):
     return internal_secret, msg1
 
 def akex_final(other_sign_public_key, internal_secret, msg2):
-
-    J, sig = msg2
-    if not verify(public_key = other_sign_public_key, signature = sig, m = ZZ(J[0])):
-        raise Exception('Signature verification failed')
     
+    try:
+        J, sig = msg2
+    except TypeError:
+        raise('Message missing signature, content or both.')
+    if not ((J in E) and isinstance(sig, tuple) and len(sig) == 2):
+        raise Exception('Violation of protocol detected.')
+    elif not verify(public_key = other_sign_public_key, signature = sig, m = ZZ(J[0])):
+        raise Exception('Signature verification failed.')
+
+
     shared = internal_secret * J
 
-    #LOOK INTO ADDING SOMETHING ELSE HERE
     h = ZZ(hash(shared[0]))
 
-    key1 = (h >> 64) & (2 ** 64 - 1) # get the first 64 bits after hash (-> 128 bits). Maybe actually just use h[0:63]
-    key2 = h & (2**64 - 1) # get the second 64 bits of the key after hash (-> 128 bits) Maybe actually just use h[64:128]
+    key1 = (h >> 64) & (2 ** 64 - 1)
+    key2 = h & (2**64 - 1)
 
     shared_keys = [key1, key2]
 
