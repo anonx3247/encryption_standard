@@ -14,12 +14,12 @@ b = _sage_const_36
 
 E = EllipticCurve(K, [a, b])
 
-print(E.order() - _sage_const_2 **_sage_const_128 )
+print("Order of the elliptic curve : ", E.order())
 
 G = E.gens()[_sage_const_0 ]
 q = G.order()
 
-print(G)
+print(f"Generator of the curve : {G} of order {q}")
 
 def secrandom(length) :
     return ZZ.random_element(_sage_const_1 , p)
