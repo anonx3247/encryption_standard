@@ -6,10 +6,10 @@ from sage.all_cmdline import *   # import sage library
 #################### 1. Sbox ####################
 #################################################
 
-a = np.uint16(11109)
-b = np.uint16(10403)
-a_inv = np.uint16(pow(int(a), -1, 2**16))
-b_inv = np.uint16(pow(int(b), -1, 2**16))
+a_sbox = np.uint16(11109)
+b_sbox = np.uint16(10403)
+a_inv = np.uint16(pow(int(a_sbox), -1, 2**16))
+b_inv = np.uint16(pow(int(b_sbox), -1, 2**16))
 
 inv5 = np.uint16(16 - 5)
 inv7 = np.uint16(16 - 7)
@@ -32,21 +32,21 @@ def bit_rotate_7_right(x: np.uint16) -> np.uint16: # 10 / 4 = 2.5
 
 def sbox(x: np.uint16) -> np.uint16: # 32
     x = bit_rotate_5_left(x) # 2.5
-    x = ~(x ^ a) # (2 + 2) / 4 = 1
-    x *= b # 50 / 4 = 12.5
-    x = ~(x ^ b) # 1
-    x *= a # 12.5
+    x = ~(x ^ a_sbox) # (2 + 2) / 4 = 1
+    x *= b_sbox # 50 / 4 = 12.5
+    x = ~(x ^ b_sbox) # 1
+    x *= a_sbox # 12.5
     x = bit_rotate_7_left(x) # 2.5
     return x
 
 def sbox_inv(x: np.uint16) -> np.uint16: # 32
     x = bit_rotate_7_right(x)
     x *= a_inv
-    x ^= b
+    x ^= b_sbox
     x = ~x
     x *= b_inv
     x = ~x
-    x ^= a
+    x ^= a_sbox
     x = bit_rotate_5_right(x)
     return x
 
@@ -209,7 +209,6 @@ def block_decrypt(key: np.uint64, c: int, rounds: int = 16, num_blocks: int = No
     cipher_blocks = split_blocks_64(c, num_blocks)
     outputs = cipher_blocks
 
-
     for _ in range(rounds):
         for i in range(len(outputs)):
             outputs[i] = block_decryption_round(key, outputs[i])
@@ -335,3 +334,64 @@ def verify(public_key, signature, m) :
 #################################################
 ############## 6.Echange de clefs ###############
 #################################################
+
+def akex_init(my_sign_secret_key, my_sign_public_key = None):
+    
+    internal_secret = ZZ.random_element(1, q) 
+    I = internal_secret * G 
+
+    sig = sign(my_sign_secret_key, ZZ(I[0])) #sign x coord only
+    msg1 = (I, sig)
+
+    return internal_secret, msg1
+
+def akex_final(other_sign_public_key, internal_secret, msg2):
+    
+    try:
+        J, sig = msg2
+    except TypeError:
+        raise('Message missing signature, content or both.')
+    if not ((J in E) and isinstance(sig, tuple) and len(sig) == 2):
+        raise Exception('Violation of protocol detected.')
+    elif not verify(public_key = other_sign_public_key, signature = sig, m = ZZ(J[0])):
+        raise Exception('Signature verification failed.')
+
+
+    shared = internal_secret * J
+
+    h = ZZ(hash(shared[0]))
+
+    key1 = (h >> 64) & (2 ** 64 - 1)
+    key2 = h & (2**64 - 1)
+
+    shared_keys = [key1, key2]
+
+    return shared_keys
+
+
+def simulate_akex():
+    print("Simulating AKEX")
+    privA, pubA = signature_keygen()
+    print(f"A: Private key: {privA}")
+    print(f"A: Public key: {pubA}")
+    privB, pubB = signature_keygen()
+    print(f"B: Private key: {privB}")
+    print(f"B: Public key: {pubB}")
+
+    #alice sends signed message (A)
+    print("Alice sends signed message (A)")
+    a, msg1 = akex_init(privA)
+
+    #bob sends signed message (B)
+    print("Bob sends signed message (B)")
+    b, msg2 = akex_init(privB)
+
+    #now alice checks Bob is who he says he is before checking the key
+    print("Alice checks Bob is who he says he is before checking the key")
+    shared_keys_a = akex_final(pubB, a, msg2)
+
+    #so will alice
+    print("Alice checks the key")
+    shared_keys_b = akex_final(pubA, b, msg1)
+
+    print(f'{shared_keys_a}\n{shared_keys_b}')
