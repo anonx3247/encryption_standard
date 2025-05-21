@@ -12,7 +12,7 @@ E = EllipticCurve(K, [0, 0, 0, a, b])
 G = E.gens()[0]
 N = E.order()
 
-def akex_init(my_sign_secret_key, my_sign_public_key = None): # why public key here??
+def akex_init(my_sign_secret_key, my_sign_public_key = None):
     
     internal_secret = ZZ.random_element(1, N) 
     I = internal_secret * G
@@ -26,8 +26,6 @@ def akex_init(my_sign_secret_key, my_sign_public_key = None): # why public key h
 def akex_final(other_sign_public_key, internal_secret, msg2):
 
     J, sig = msg2
-    #to turn the point in the curb into a hashable message we make m the concatenation of x and y coords.
-    #m = (ZZ(J[0]) >> 128) | ZZ(J[1]) #concat...
     if not verify(public_key = other_sign_public_key, signature = sig, m = ZZ(J[0])):
         raise Exception('Signature verification failed')
     
@@ -55,12 +53,9 @@ if __name__ == '__main__':
     b, msg2 = akex_init(privB)
 
     #now alice checks Bob is who he says he is before checking the key
-    shared_keys_a = akex_final(msg2[0], a, msg2) #might be something wrong? But from what I understand the public key is A for alice, B for Bob
+    shared_keys_a = akex_final(pubB, a, msg2)
 
     #so will alice
-    shared_keys_b = akex_final(msg1[0], b, msg1)
+    shared_keys_b = akex_final(pubA, b, msg1)
 
-    print(f'{shared_keys_a}\n{shared_keys_b}') 
-
-    #to check if it can go wrong but it still works??
-    #bad_sig_B = (sig_B[0] + 1, sig_B[1])
+    print(f'{shared_keys_a}\n{shared_keys_b}')
