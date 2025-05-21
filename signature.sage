@@ -8,12 +8,10 @@ b = 36
 
 E = EllipticCurve(K, [a, b])
 
-print(E.order() - 2^128)
-
 G = E.gens()[0]
 q = G.order()
 
-print(G)
+print(f"Generator of the curve : {G} of order {q}")
 
 def secrandom(length) :
     return ZZ.random_element(1, p)
@@ -37,8 +35,6 @@ def verify(public_key, signature, m) :
     e = hash(m)
     u = r * e * t % q
     r_prime = u * public_key
-    print("r = ", r)
-    print("r_prime =", r_prime[1])
     success = r == r_prime[1]
     return success
 

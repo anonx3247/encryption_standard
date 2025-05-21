@@ -1,5 +1,6 @@
 from sbox import sbox
 import numpy as np
+import random as rd
 
 def chunk_binary(string, length):
     return [int(string[i:i+length].zfill(length), 2) for i in range(0, len(string), length)]
@@ -26,3 +27,8 @@ def hash(message: int) -> int:
         state = p_128(chunk ^ state) ^ state
 
     return state
+
+
+
+for nb in range(20) :
+    print(f"hash({nb}) : {hex(hash(nb))}")
