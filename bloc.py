@@ -5,6 +5,7 @@ from matrix_ops import matrix_multiply_vector, circular_matrix_from_vector, matr
 matrix = circular_matrix_from_vector(np.uint64(0xc063fe883bca8005))
 matrix_inv = matrix_inverse(matrix)
 
+
 def block_encrypt(key: np.uint64, message: int, rounds: int = 16) -> int:
     # separate into 64-bit blocks with padding
     message_blocks = split_blocks_64(message)

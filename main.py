@@ -1,5 +1,4 @@
 import numpy as np
-import galois
 
 ################################################
 #################### 1. Sbox ####################
@@ -14,15 +13,19 @@ inv5 = np.uint16(16 - 5)
 inv7 = np.uint16(16 - 7)
 
 def bit_rotate_5_left(x: np.uint16) -> np.uint16: # 10 / 4 = 2.5
+    global inv5
     return ((x << 5) | (x >> inv5))
 
 def bit_rotate_7_left(x: np.uint16) -> np.uint16: # 10 / 4 = 2.5
+    global inv7
     return ((x << 7) | (x >> inv7))
 
 def bit_rotate_5_right(x: np.uint16) -> np.uint16: # 10 / 4 = 2.5
+    global inv5
     return ((x >> 5) | (x << inv5))
 
 def bit_rotate_7_right(x: np.uint16) -> np.uint16: # 10 / 4 = 2.5
+    global inv7
     return ((x >> 7) | (x << inv7))
 
 def sbox(x: np.uint16) -> np.uint16: # 32
@@ -49,78 +52,76 @@ def sbox_inv(x: np.uint16) -> np.uint16: # 32
 ################ 2. Chiffrement #################
 #################################################
 
-F_2 = galois.GF(2)
 # We make the choice to store matrices as 64-long-lists of uint64s
 
-def matrix_L() -> list[np.uint64]:
-    lines = """c063fe883bca8005
-80c7fd107795000b
-18ffa20ef2a0017
-31ff441de54002e
-63fe883bca8005c
-c7fd107795000b8
-18ffa20ef2a00170
-31ff441de54002e0
-63fe883bca8005c0
-c7fd107795000b80
-8ffa20ef2a001701
-1ff441de54002e03
-3fe883bca8005c06
-7fd107795000b80c
-ffa20ef2a0017018
-ff441de54002e031
-fe883bca8005c063
-fd107795000b80c7
-fa20ef2a0017018f
-f441de54002e031f
-e883bca8005c063f
-d107795000b80c7f
-a20ef2a0017018ff
-441de54002e031ff
-883bca8005c063fe
-107795000b80c7fd
-20ef2a0017018ffa
-41de54002e031ff4
-83bca8005c063fe8
-7795000b80c7fd1
-ef2a0017018ffa2
-1de54002e031ff44
-3bca8005c063fe88
-7795000b80c7fd10
-ef2a0017018ffa20
-de54002e031ff441
-bca8005c063fe883
-795000b80c7fd107
-f2a0017018ffa20e
-e54002e031ff441d
-ca8005c063fe883b
-95000b80c7fd1077
-2a0017018ffa20ef
-54002e031ff441de
-a8005c063fe883bc
-5000b80c7fd10779
-a0017018ffa20ef2
-4002e031ff441de5
-8005c063fe883bca
-b80c7fd107795
-17018ffa20ef2a
-2e031ff441de54
-5c063fe883bca8
-b80c7fd1077950
-17018ffa20ef2a0
-2e031ff441de540
-5c063fe883bca80
-b80c7fd10779500
-17018ffa20ef2a00
-2e031ff441de5400
-5c063fe883bca800
-b80c7fd107795000
-7018ffa20ef2a001
-e031ff441de54002""".split('\n')
+def matrix_L_inverse() -> list[np.uint64]:
+    # precalculated
+    lines = """f8149a47d179d1ad
+f029348fa2f3a35b
+e052691f45e746b7
+c0a4d23e8bce8d6f
+8149a47d179d1adf
+29348fa2f3a35bf
+52691f45e746b7e
+a4d23e8bce8d6fc
+149a47d179d1adf8
+29348fa2f3a35bf0
+52691f45e746b7e0
+a4d23e8bce8d6fc0
+49a47d179d1adf81
+9348fa2f3a35bf02
+2691f45e746b7e05
+4d23e8bce8d6fc0a
+9a47d179d1adf814
+348fa2f3a35bf029
+691f45e746b7e052
+d23e8bce8d6fc0a4
+a47d179d1adf8149
+48fa2f3a35bf0293
+91f45e746b7e0526
+23e8bce8d6fc0a4d
+47d179d1adf8149a
+8fa2f3a35bf02934
+1f45e746b7e05269
+3e8bce8d6fc0a4d2
+7d179d1adf8149a4
+fa2f3a35bf029348
+f45e746b7e052691
+e8bce8d6fc0a4d23
+d179d1adf8149a47
+a2f3a35bf029348f
+45e746b7e052691f
+8bce8d6fc0a4d23e
+179d1adf8149a47d
+2f3a35bf029348fa
+5e746b7e052691f4
+bce8d6fc0a4d23e8
+79d1adf8149a47d1
+f3a35bf029348fa2
+e746b7e052691f45
+ce8d6fc0a4d23e8b
+9d1adf8149a47d17
+3a35bf029348fa2f
+746b7e052691f45e
+e8d6fc0a4d23e8bc
+d1adf8149a47d179
+a35bf029348fa2f3
+46b7e052691f45e7
+8d6fc0a4d23e8bce
+1adf8149a47d179d
+35bf029348fa2f3a
+6b7e052691f45e74
+d6fc0a4d23e8bce8
+adf8149a47d179d1
+5bf029348fa2f3a3
+b7e052691f45e746
+6fc0a4d23e8bce8d
+df8149a47d179d1a
+bf029348fa2f3a35
+7e052691f45e746b
+fc0a4d23e8bce8d6""".split('\n')
+    return [np.uint64(int(line, 16)) for line in lines]
     
-    mat = [np.uint64(int())
-    
-
 def bit_rotate_64(x: np.uint64, n: int) -> np.uint64:
     n = np.uint64(n)
     n_inv = np.uint64(64 - n)
@@ -133,24 +134,159 @@ def circulant_matrix_from_vector(vector: np.uint64) -> list[np.uint64]:
     return matrix
 
 def matrix_multiply_vector(matrix: list[np.uint64], vector: np.uint64) -> np.uint64:
+    # Pour des vecteurs binaires la multiplication revient a xor-er les colonnes
+    # correspondant aux linges du vecteur avec un 1
+    # ici on le fait avec des lignes cars toutes nos matrices sont symmetriques
     result = np.uint64(0)
     for j in range(64):
         if (vector>>(63-j))&1 == 1:
             result ^= matrix[j]
     return result
 
+matrix_L = circulant_matrix_from_vector(np.uint64(0xc063fe883bca8005))
+matrix_L_inv = matrix_L_inverse()
+
+def join_blocks(blocks: list[np.uint16], block_size: int) -> np.uint64:
+    return np.uint64(int(''.join([bin(block)[2:].zfill(block_size) for block in blocks]), 2))
+
+def split_blocks(vector: np.uint64, block_size: int) -> list[np.uint16]:
+    vector_str = bin(vector)[2:].zfill(64)
+    return [np.uint16(int(vector_str[i:i+block_size], 2)) for i in range(0, 64, block_size)]
+
+def join_blocks_64(blocks: list[np.uint64]) -> int:
+    return int(''.join([bin(block)[2:].zfill(64) for block in blocks]), 2)
+
+def split_blocks_64(vector: int, num_blocks: int = None) -> list[np.uint64]:
+    vector_str = str(bin(vector))[2:]
+    length = len(vector_str)
+    if num_blocks is None:
+        num_blocks = length // 64 + 1
+    vector_str = vector_str.zfill(64 * num_blocks)
+    return [np.uint64(int(vector_str[i:i+64], 2)) for i in range(0, 64 * num_blocks, 64)]
+
+def linear_layer(blocks: list[np.uint16]) -> np.uint64:
+    global matrix_L
+    # concatenate the blocks into a single 64-bit vector
+    vector = join_blocks(blocks, 16)
+    return matrix_multiply_vector(matrix_L, vector)
+
+def linear_layer_inv(vector: np.uint64) -> list[np.uint16]:
+    global matrix_L_inv
+    output = matrix_multiply_vector(matrix_L_inv, vector)
+    # split the output into 16-bit blocks
+    return split_blocks(output, 16)
+
+def block_encryption_round(key: np.uint64, message: np.uint64) -> np.uint64:
+    message = message ^ key
+    blocks = split_blocks(message, 16)
+    blocks = [sbox(block) for block in blocks]
+    output = linear_layer(blocks)
+    return output
+
+def block_decryption_round(key: np.uint64, cipher: np.uint64) -> np.uint64:
+    blocks = linear_layer_inv(cipher)
+    blocks = [sbox_inv(block) for block in blocks]
+    output = join_blocks(blocks, 16)
+    output = output ^ key
+    return output
+
+def block_encrypt(key: np.uint64, m: int, rounds: int = 16) -> int:
+    # separate into 64-bit blocks with padding
+    message_blocks = split_blocks_64(m)
+    outputs = message_blocks
+
+    for _ in range(rounds):
+        for i in range(len(outputs)):
+            outputs[i] = block_encryption_round(key, outputs[i])
+    
+    # concatenate the outputs
+    return join_blocks_64(outputs), len(outputs)
+
+def block_decrypt(key: np.uint64, c: int, rounds: int = 16, num_blocks: int = None) -> int:
+    # separate into 64-bit blocks with padding
+    cipher_blocks = split_blocks_64(c, num_blocks)
+    outputs = cipher_blocks
 
 
+    for _ in range(rounds):
+        for i in range(len(outputs)):
+            outputs[i] = block_decryption_round(key, outputs[i])
+    
+    # concatenate the outputs
+    return join_blocks_64(outputs)
 
 #################################################
 ################# 3. Hachage ####################
 #################################################
 
+def split_blocks_128(vector: int, num_blocks: int = None) -> list[np.uint64]:
+    vector_str = str(bin(vector))[2:]
+    length = len(vector_str)
+    if num_blocks is None:
+        num_blocks = length // 128 + 1
+    vector_str = vector_str.zfill(128 * num_blocks)
+    return [int(vector_str[i:i+128], 2) for i in range(0, 128 * num_blocks, 128)]
+
+def p_128(value: int) -> int:
+    # 128 bits divisés en 8 blocs de 16 bits
+    blocs = [(value >> (128 - 16*(i+1))) & 0xFFFF for i in range(8)]
+    blocs = [sbox(np.uint16(b)) for b in blocs]
+    blocs = [int(blocs[i]) << (128 - 16*(i+1)) for i in range(8)]
+    return sum(blocs)
+
+
+def hash(message: int) -> int:
+    """
+    Hybride entre éponge et Merkle–Damgård avec f(M, S) = p_128(M ^ S) ^ S
+    """
+
+    chunks = split_blocks_128(message)
+    state = 0b11110001111110010101001100011001111010101010101011111010110111001101010100011000111010111111010100000111010100111011010111100011
+
+    for chunk in chunks:
+        state = p_128(chunk ^ state) ^ state
+
+    return state
 
 #################################################
 ############## 4. Mode d'Opération ##############
 #################################################
 
+def encrypt_and_authenticate(keys: list[np.uint16], m: int, aux=None):
+    if len(keys) != 2:
+        raise ValueError("Deux clés sont requises")
+    
+    k1, k2 = keys
+    
+    c, num_blocks = block_encrypt(k1, m)
+
+    k2 = int(k2)
+
+    tag = hash(m ^ k2)
+
+    aux = num_blocks
+    
+    return aux, c, tag
+
+def decrypt_and_verify(keys: list[np.uint16], c: int, tag: int, aux=None):
+    if len(keys) != 2:
+        raise ValueError("Deux clés sont requises")
+    
+    k1, k2 = keys
+    k2 = int(k2)
+    
+    # Déchiffrement du message seulement si le tag est valide
+    m = block_decrypt(k1, c, num_blocks=aux)
+
+    
+    # Vérification du tag avant déchiffrement
+    computed_tag = hash(m ^ k2)
+    
+    if computed_tag != tag:
+        print(f"Tag invalide: {computed_tag:x} != {tag:x}")
+        return False, None
+    
+    return True, m
 
 #################################################
 ################## 5.Signature ##################
