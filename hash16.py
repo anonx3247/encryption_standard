@@ -1,8 +1,9 @@
 from sbox import sbox
 import numpy as np
+from bloc import split_blocks_128
 
-def chunk_binary(string, length):
-    return [int(string[i:i+length].zfill(length), 2) for i in range(0, len(string), length)]
+def chunk_binary(message):
+    return split_blocks_128(message)
 
 def p_128(value: int) -> int:
     # 128 bits divisés en 8 blocs de 16 bits
@@ -15,14 +16,13 @@ def hash(message: int) -> int:
     """
     Merkle–Damgård avec f(M, S) = p_128(M ^ S) ^ S
     """
-    chunk_size = 128
-    binary_message = bin(message)[2:]
-    message_chunks = chunk_binary(binary_message, chunk_size)
+    message_chunks = chunk_binary(message)
 
     state = 0b11110001111110010101001100011001111010101010101011111010110111001101010100011000111010111111010100000111010100111011010111100011
 
-    
-    for chunk in message_chunks:
-        state = p_128(chunk ^ state) ^ state
+    rounds = 256
+    for _ in range(rounds):
+        for chunk in message_chunks:
+            state = p_128(chunk ^ state) ^ state
 
     return state

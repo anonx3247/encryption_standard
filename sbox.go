@@ -208,77 +208,80 @@ func main() {
 	//_ = findGoodSbox()
 	//fmt.Println("Found a good S-box!")
 	//testSboxes(TEST_COUNT)
-	tests := make([]Test[uint16], TEST_COUNT)
+	testSbox(sBox, true)
+	/*
+		tests := make([]Test[uint16], TEST_COUNT)
 
-	// Create a channel to collect results
-	resultChan := make(chan struct {
-		index int
-		test  Test[uint16]
-	}, TEST_COUNT)
+		// Create a channel to collect results
+		resultChan := make(chan struct {
+			index int
+			test  Test[uint16]
+		}, TEST_COUNT)
 
-	// Launch goroutines for each test
-	for i := 0; i < TEST_COUNT; i++ {
-		go func(index int) {
-			a := uint16(rand.Uint64())
-			b := uint16(rand.Uint64())
-			c := uint16(rand.Uint64())
-			d := uint16(rand.Uint64())
-			if b%2 == 0 {
-				b++
-			}
-			if d%2 == 0 {
-				d++
-			}
-			f := func(x uint16) uint16 {
-				return Sbox(x, a, b, c, d)
-			}
-			fmt.Printf("Testing Sbox %d with a = %d, b = %d, c = %d, d = %d\n", index, a, b, c, d)
-			differential_pairs, linear_pairs := testSbox(f, false)
-			fmt.Printf("Done testing Sbox %d\n", index)
-			resultChan <- struct {
-				index int
-				test  Test[uint16]
-			}{index, Test[uint16]{a, b, c, d, differential_pairs, linear_pairs}}
-		}(i)
-	}
-
-	// Collect results
-	for i := 0; i < TEST_COUNT; i++ {
-		result := <-resultChan
-		tests[result.index] = result.test
-	}
-
-	// Sorting can't be easily parallelized with the standard library
-	sort.Slice(tests, func(j, k int) bool {
-		if len(tests[j].differential_pairs) == 0 && len(tests[k].differential_pairs) != 0 {
-			return false
-		} else if len(tests[j].differential_pairs) != 0 && len(tests[k].differential_pairs) == 0 {
-			return true
-		} else if len(tests[j].linear_pairs) == 0 && len(tests[k].linear_pairs) != 0 {
-			return false
-		} else if len(tests[j].linear_pairs) != 0 && len(tests[k].linear_pairs) == 0 {
-			return true
+		// Launch goroutines for each test
+		for i := 0; i < TEST_COUNT; i++ {
+			go func(index int) {
+				a := uint16(rand.Uint64())
+				b := uint16(rand.Uint64())
+				c := uint16(rand.Uint64())
+				d := uint16(rand.Uint64())
+				if b%2 == 0 {
+					b++
+				}
+				if d%2 == 0 {
+					d++
+				}
+				f := func(x uint16) uint16 {
+					return Sbox(x, a, b, c, d)
+				}
+				fmt.Printf("Testing Sbox %d with a = %d, b = %d, c = %d, d = %d\n", index, a, b, c, d)
+				differential_pairs, linear_pairs := testSbox(f, false)
+				fmt.Printf("Done testing Sbox %d\n", index)
+				resultChan <- struct {
+					index int
+					test  Test[uint16]
+				}{index, Test[uint16]{a, b, c, d, differential_pairs, linear_pairs}}
+			}(i)
 		}
-		j_dif := tests[j].differential_pairs[0]
-		k_dif := tests[k].differential_pairs[0]
-		j_lin := tests[j].linear_pairs[0]
-		k_lin := tests[k].linear_pairs[0]
-		return j_dif.prob+j_lin.prob > k_dif.prob+k_lin.prob
-	})
 
-	// Process top 3 results
-	for i, test := range tests[:3] {
-		fmt.Printf("Test %d: a = %d, b = %d\n", i, test.a, test.b)
-		printDifferentialPairs(test.differential_pairs, 3)
-		printLinearPairs(test.linear_pairs, 3)
-	}
+		// Collect results
+		for i := 0; i < TEST_COUNT; i++ {
+			result := <-resultChan
+			tests[result.index] = result.test
+		}
 
-	best := func(x uint16) uint16 {
-		return Sbox(x, tests[0].a, tests[0].b, tests[0].c, tests[0].d)
-	}
-	for i := uint16(0); i < 32; i++ {
-		fmt.Printf("%d\n", best(i))
-	}
+		// Sorting can't be easily parallelized with the standard library
+		sort.Slice(tests, func(j, k int) bool {
+			if len(tests[j].differential_pairs) == 0 && len(tests[k].differential_pairs) != 0 {
+				return false
+			} else if len(tests[j].differential_pairs) != 0 && len(tests[k].differential_pairs) == 0 {
+				return true
+			} else if len(tests[j].linear_pairs) == 0 && len(tests[k].linear_pairs) != 0 {
+				return false
+			} else if len(tests[j].linear_pairs) != 0 && len(tests[k].linear_pairs) == 0 {
+				return true
+			}
+			j_dif := tests[j].differential_pairs[0]
+			k_dif := tests[k].differential_pairs[0]
+			j_lin := tests[j].linear_pairs[0]
+			k_lin := tests[k].linear_pairs[0]
+			return j_dif.prob+j_lin.prob > k_dif.prob+k_lin.prob
+		})
+
+		// Process top 3 results
+		for i, test := range tests[:3] {
+			fmt.Printf("Test %d: a = %d, b = %d\n", i, test.a, test.b)
+			printDifferentialPairs(test.differential_pairs, 3)
+			printLinearPairs(test.linear_pairs, 3)
+		}
+
+		best := func(x uint16) uint16 {
+			return Sbox(x, tests[0].a, tests[0].b, tests[0].c, tests[0].d)
+		}
+		for i := uint16(0); i < 32; i++ {
+			fmt.Printf("%d\n", best(i))
+		}
+	*/
 }
 
 func testSbox[T Number](sbox func(T) T, print_results bool) (differential_pairs []Pair[T], linear_pairs []Pair[T]) {

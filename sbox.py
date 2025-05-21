@@ -19,11 +19,9 @@ operations = [
 
 def sbox(x: np.uint16) -> np.uint16: # 32
     x = bit_rotate_16_left(x, 5)
-    x ^= a
-    x = ~x
+    x = ~(x ^ a)
     x *= b
-    x = ~x
-    x ^= b
+    x = ~(x ^ b)
     x *= a
     x = bit_rotate_16_left(x, 7)
     return x
