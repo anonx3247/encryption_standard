@@ -287,6 +287,6 @@ This project was developed as part of an **Algebra and Cryptology** course, demo
 
 ---
 
-**Author**: Exam Project  
+**Authors**: Anas Lecaillon, Timothée Colette, Eliott Tadros, Jeanne Petit, Capucine Leroy, and Joseph Cohen
 **Course**: Algèbre et Cryptologie  
 **Language**: Python 3 + SageMath
